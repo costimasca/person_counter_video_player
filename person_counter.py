@@ -11,13 +11,13 @@ class PersonCounter:
     When the number of people changes, it will notify other listeners by changing 'number changed' to True.
     Listeners should set the variable to False after handling.
     """
-    def __init__(self):
-        # self.serial = serial.Serial('/dev/cu.usbmodem14201', baudrate=9600, timeout=0.1)
+    def __init__(self, port):
+        self.serial = serial.Serial(port, baudrate=9600, timeout=0.1)
         self.people_count = 0
         self.number_changed = False
 
         # change the thread target to run_fake and comment out the self.serial line to test the software without Arduino
-        thread = threading.Thread(target=self.run_fake, args=())
+        thread = threading.Thread(target=self.run, args=())
         thread.start()
 
     def run(self):
@@ -39,7 +39,7 @@ class PersonCounter:
     def run_fake(self):
         while True:
             time.sleep(2)
-            current_people_number = random.randint(0, 3)
+            current_people_number = random.randint(0, 1)
 
             if not current_people_number == self.people_count:
                 self.number_changed = True
