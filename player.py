@@ -28,6 +28,11 @@ class VideoPlayer:
         self.transition_flash = False
         self.flash_value = -1
 
+        # sound
+        self.media_player = vlc.MediaPlayer(self.get_sound_from_number(counter.people_count))
+        self.media_player.play()
+        self.new_song = None
+
         self.run()
 
     def run(self):
@@ -35,9 +40,6 @@ class VideoPlayer:
         Main function of the player. Also does the transition to another video if it has to.
         :return:
         """
-        # song = vlc.MediaPlayer('song.mp3')
-        # song.play()
-        # song.set_time(10000)
 
         while True:
             if self.counter.number_changed:
@@ -80,6 +82,11 @@ class VideoPlayer:
             if not ret:
                 exit("Cannot start video from the beginning")
 
+            # handle sound
+            self.media_player.stop()
+            self.media_player.release()
+            self.media_player = vlc.MediaPlayer(self.get_sound_from_number(self.counter.people_count))
+
         if self.transition_flash:
             frame = self.flash(frame)
 
@@ -113,6 +120,17 @@ class VideoPlayer:
         # set to true so that the flash can be done
         self.transition_flash = True
 
+    def fade_sound(self):
+        """
+
+        :return:
+        """
+        if 0.5 <= self.flash_value <= 1:
+            self.media_player.audio_set_volume(int(100 * self.flash_value))
+
+        elif self.flash_value < 0.5:
+            self.media_player.stop()
+
     def flash(self, img):
         """Handles the image distortion applied to multiple frames that form the flash during a transition between
         two videos.
@@ -124,20 +142,42 @@ class VideoPlayer:
 
             return im
 
+        def compute_sound_time():
+            return int(self.current_frame * self.delta_time * 1000)
+
         if self.flash_value == -1:
             if self.transition_flash:
                 print("Starting flash")
                 self.flash_value = 1
+
+                # sound handling
+                self.new_song = vlc.MediaPlayer(self.get_sound_from_number(self.counter.people_count))
+                t = compute_sound_time()
+                print("time:" + str(t))
+                self.new_song.audio_set_volume(0)
+                self.new_song.play()
+                self.new_song.set_time(t)
+
                 return compute_flash(img)
 
         elif self.flash_value <= 0:
             print("Flash finished")
             self.flash_value = -1
             self.transition_flash = False
+
+            # handle sound
+            self.media_player.stop()
+            self.media_player.release()
+            self.media_player = self.new_song
+
             return img
 
         elif self.flash_value > 0:
             self.flash_value -= 0.05
+
+            # handle sound
+            self.media_player.audio_set_volume(int(100 * self.flash_value))
+            self.new_song.audio_set_volume(int(100 * (1 - self.flash_value)))
 
             return compute_flash(img)
 
@@ -155,3 +195,18 @@ class VideoPlayer:
 
         else:
             return base_path + "{}.avi".format(number)
+
+    @staticmethod
+    def get_sound_from_number(number):
+        """
+        Returns the path to the sound file identified by it's number
+        :param number: between 0 and 5
+        :return:
+        """
+
+        base_path = "sounds/sound "
+        if not 0 <= number <= 5:
+            exit("no sound file with number: " + number)
+
+        else:
+            return base_path + "{}.mp4".format(number)
