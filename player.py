@@ -7,6 +7,11 @@ import person_counter
 
 
 class VideoPlayer:
+    """
+    Plays one of 5 videos, depending on how many people are detected by the person counter instance.
+    Handles the flash during a transition.
+    Also plays the sound in sync with the videos.
+    """
     def __init__(self, counter: person_counter.PersonCounter):
         self.counter = counter
         self._current_video = cv2.VideoCapture(self.get_video_from_number(counter.people_count))
@@ -27,8 +32,7 @@ class VideoPlayer:
 
     def run(self):
         """
-        Main function of the player. Keeps track of the current frame and time and plays the video. Also does the
-        transition to another video if it has to.
+        Main function of the player. Also does the transition to another video if it has to.
         :return:
         """
         # song = vlc.MediaPlayer('song.mp3')
@@ -43,16 +47,30 @@ class VideoPlayer:
             self.overlay_people_count(frame)
             cv2.imshow("window", frame)
 
-            # wait the appropriate amount of time to have a fixed fps
-            while True:
-                self.current_time = time.perf_counter()
-                if self.current_time - self.previous_time > self.delta_time:
-                    self.previous_time = self.current_time
-                    break
-                pressed_key = cv2.waitKey(1)
-                self.counter.key(pressed_key)
+            self.wait_for_fps()
+
+    def wait_for_fps(self):
+        """
+        Wait the appropriate amount of time to have a fixed fps. delta_time is precomputed and is the duration
+        between two frames.
+
+        Also passes any key that is pressed to the key event handler.
+        :return:
+        """
+        while True:
+            self.current_time = time.perf_counter()
+            if self.current_time - self.previous_time > self.delta_time:
+                self.previous_time = self.current_time
+                break
+            pressed_key = cv2.waitKey(1)
+            self.counter.key(pressed_key)
 
     def get_current_frame(self):
+        """
+        Returns the frame that should be displayed next. Handles restarting the video from scratch if it has reached
+        the end. Also adds the flash to the frame if a transition is in effect.
+        :return:
+        """
         ret, frame = self._current_video.read()
         if not ret:
             # if end of video reached, start again from the current video
@@ -70,6 +88,11 @@ class VideoPlayer:
         return frame
 
     def overlay_people_count(self, image):
+        """
+        Writes the number of people on the image before showing it.
+        :param image:
+        :return:
+        """
         font = cv2.FONT_HERSHEY_SIMPLEX
         cv2.putText(image, str(self.counter.people_count), (10, 550), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
 
@@ -91,7 +114,9 @@ class VideoPlayer:
         self.transition_flash = True
 
     def flash(self, img):
-
+        """Handles the image distortion applied to multiple frames that form the flash during a transition between
+        two videos.
+        """
         def compute_flash(im):
             v2 = 2 - self.flash_value
 
@@ -120,7 +145,7 @@ class VideoPlayer:
     def get_video_from_number(number):
         """
         Returns the path to the video identified by it's number
-        :param number:
+        :param number: between 0 and 5
         :return:
         """
 

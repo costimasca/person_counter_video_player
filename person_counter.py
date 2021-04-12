@@ -16,6 +16,7 @@ class PersonCounter:
         self.people_count = 0
         self.number_changed = False
 
+        # change the thread target to run_fake and comment out the self.serial line to test the software without Arduino
         thread = threading.Thread(target=self.run_fake, args=())
         thread.start()
 
