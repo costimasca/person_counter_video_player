@@ -12,18 +12,30 @@ int sens2 = 1;
 
 int photocellReading;
 
+int voltage = 2;
+
 void setup(void) {
   Serial.begin(9600);
   Serial.setTimeout(1);
+
+  pinMode(voltage, OUTPUT);
+  digitalWrite(voltage, HIGH);
 }
  
 void loop(void) {
+  int val;
+//  while(true) {
+//    val = analogRead(sens1);
+//    Serial.print(val);
+//    val = analogRead(sens2);
+//    Serial.print(" ");
+//    Serial.println(val);
+//  }
 
   // Count how many people enter
   if(analogRead(sens1) < LIGHT_TH) {
     for(int i=0; i < DETECTION_DURATION; i++) {
       if(analogRead(sens2) < LIGHT_TH) {
-        people_count++;
         Serial.println("+");
 
         // make sure the person exits the second tripped laser; will have multiple false counts otherwise
@@ -40,7 +52,6 @@ void loop(void) {
   else if(analogRead(sens2) < LIGHT_TH) {
     for(int i=0; i < DETECTION_DURATION; i++) {
       if(analogRead(sens1) < LIGHT_TH) {
-        people_count--;
         Serial.println("-");
         
         // make sure the person exits the second tripped laser; will have multiple false counts otherwise

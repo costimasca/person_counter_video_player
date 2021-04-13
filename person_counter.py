@@ -4,6 +4,8 @@ import threading
 
 import serial
 
+from sys import platform
+
 
 class PersonCounter:
     """
@@ -11,13 +13,19 @@ class PersonCounter:
     When the number of people changes, it will notify other listeners by changing 'number changed' to True.
     Listeners should set the variable to False after handling.
     """
-    def __init__(self, port):
-        self.serial = serial.Serial(port, baudrate=9600, timeout=0.1)
+    def __init__(self, port, no_arduino):
         self.people_count = 0
         self.number_changed = False
 
-        # change the thread target to run_fake and comment out the self.serial line to test the software without Arduino
-        thread = threading.Thread(target=self.run, args=())
+        self.keys = {"up": {"win32": 2490368, "darwin": 63232},
+                     "down": {"win32": 2621440, "darwin": 63233}}
+
+        if no_arduino:
+            thread = threading.Thread(target=self.run_no_arduino, args=())
+        else:
+            self.serial = serial.Serial(port, baudrate=9600, timeout=0.1)
+            thread = threading.Thread(target=self.run, args=())
+
         thread.start()
 
     def run(self):
@@ -34,16 +42,14 @@ class PersonCounter:
 
                 self.correct()
                 self.number_changed = True
-                print(self.people_count)
 
-    def run_fake(self):
+    def run_no_arduino(self):
         while True:
             time.sleep(2)
             current_people_number = random.randint(0, 1)
 
             if not current_people_number == self.people_count:
                 self.number_changed = True
-            print(current_people_number)
 
             self.people_count = current_people_number
 
@@ -51,16 +57,18 @@ class PersonCounter:
         if event == -1:
             return
 
-        if event == 0:
+        print(event)
+
+        if event == self.keys["up"][platform]:
             self.people_count += 1
             self.correct()
             self.number_changed = True
-        if event == 1:
+        if event == self.keys["down"][platform]:
             self.people_count -= 1
             self.correct()
             self.number_changed = True
 
-        if 5 > event - 48 > 0:
+        if 5 >= event - 48 >= 0:
             self.people_count = int(event - 48)
             self.correct()
             self.number_changed = True

@@ -12,7 +12,7 @@ class VideoPlayer:
     Handles the flash during a transition.
     Also plays the sound in sync with the videos.
     """
-    def __init__(self, counter: person_counter.PersonCounter):
+    def __init__(self, counter: person_counter.PersonCounter, resolution):
         self.counter = counter
         self._current_video = cv2.VideoCapture(self.get_video_from_number(counter.people_count))
         # duration between 2 consecutive frames
@@ -33,6 +33,10 @@ class VideoPlayer:
         self.media_player.play()
         self.new_song = None
 
+        cv2.namedWindow("window", cv2.WINDOW_FREERATIO)
+        cv2.setWindowProperty("window", cv2.WND_PROP_OPENGL, cv2.WINDOW_OPENGL)
+        self.resolution = resolution
+
         self.run()
 
     def run(self):
@@ -47,6 +51,7 @@ class VideoPlayer:
 
             frame = self.get_current_frame()
             self.overlay_people_count(frame)
+            frame = cv2.resize(frame, self.resolution, interpolation=cv2.INTER_CUBIC)
             cv2.imshow("window", frame)
 
             self.wait_for_fps()
@@ -64,7 +69,7 @@ class VideoPlayer:
             if self.current_time - self.previous_time > self.delta_time:
                 self.previous_time = self.current_time
                 break
-            pressed_key = cv2.waitKey(1)
+            pressed_key = cv2.waitKeyEx(1)
             self.counter.key(pressed_key)
 
     def get_current_frame(self):
@@ -101,7 +106,7 @@ class VideoPlayer:
         :return:
         """
         font = cv2.FONT_HERSHEY_SIMPLEX
-        cv2.putText(image, str(self.counter.people_count), (10, 550), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
+        cv2.putText(image, str(self.counter.people_count), (10, 550), font, 1, (204, 102, 255), 2, cv2.LINE_AA)
 
     def transition(self):
         """
