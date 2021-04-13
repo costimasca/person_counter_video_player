@@ -106,7 +106,7 @@ class VideoPlayer:
         :return:
         """
         font = cv2.FONT_HERSHEY_SIMPLEX
-        cv2.putText(image, str(self.counter.people_count), (10, 550), font, 1, (204, 102, 255), 2, cv2.LINE_AA)
+        cv2.putText(image, str(self.counter.people_count), (10, 550), font, 1, (232, 167, 152), 2, cv2.LINE_AA)
 
     def transition(self):
         """
